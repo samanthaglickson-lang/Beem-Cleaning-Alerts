@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Beem Room Alert</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:         #100808;
+    --surface:    #1A0C0C;
+    --card:       #221010;
+    --border:     #3A1A1A;
+    --primary:    #D94040;
+    --primary-dim:#6B1A1A;
+    --primary-hl: #E86060;
+    --sage:       #4E7A61;
+    --sage-dim:   #243D2F;
+    --text:       #F0E6E6;
+    --muted:      #7A6060;
+    --pulse-ring: rgba(217,64,64,0.25);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.02em;
+    color: var(--primary);
+  }
+
+  .logo span {
+    font-style: italic;
+    color: var(--text);
+    opacity: 0.45;
+    font-size: 0.85rem;
+    margin-left: 8px;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .view-toggle {
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 3px;
+  }
+
+  .view-toggle button {
+    padding: 7px 16px;
+    border: none;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+    color: var(--muted);
+  }
+
+  .view-toggle button.active {
+    background: var(--card);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+
+  main {
+    flex: 1;
+    padding: 28px 20px;
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    margin-top: 28px;
+  }
+
+  .section-label:first-child { margin-top: 0; }
+
+  .room-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .room-btn {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 16px 16px;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: left;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    overflow: hidden;
+  }
+
+  .room-btn:hover { border-color: var(--primary-dim); background: #2A1212; }
+  .room-btn:active { transform: scale(0.98); }
+
+  .room-btn .room-type-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-bottom: 10px;
+  }
+
+  .room-btn.sauna .room-type-dot { background: #C87A3A; }
+  .room-btn.red   .room-type-dot { background: var(--primary); }
+
+  .room-btn .room-name {
+    display: block;
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+
+  .room-btn .room-type-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .room-btn .status-chip {
+    position: absolute;
+    top: 12px; right: 12px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 20px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .room-btn.needs-clean .status-chip { opacity: 1; background: var(--primary-dim); color: var(--primary-hl); }
+  .room-btn.in-progress .status-chip { opacity: 1; background: var(--sage-dim); color: #6EC48A; }
+  .room-btn.needs-clean { border-color: var(--primary-dim); background: #1E0E0E; }
+  .room-btn.in-progress { border-color: var(--sage-dim); background: #101A12; }
+
+  .alert-btn {
+    width: 100%;
+    margin-top: 16px;
+    padding: 13px 0;
+    background: var(--primary);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+
+  .alert-btn:hover { background: var(--primary-hl); }
+  .alert-btn:active { transform: scale(0.98); }
+  .alert-btn:disabled { background: var(--border); color: var(--muted); cursor: default; transform: none; }
+
+  .sound-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 20px;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .sound-toggle {
+    width: 36px; height: 20px;
+    background: var(--border);
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s;
+  }
+
+  .sound-toggle.on { background: var(--primary-dim); }
+
+  .sound-toggle::after {
+    content: '';
+    position: absolute;
+    width: 14px; height: 14px;
+    background: var(--muted);
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: all 0.2s;
+  }
+
+  .sound-toggle.on::after { left: 19px; background: var(--primary-hl); }
+
+  .queue-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+
+  .queue-empty .icon { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.4; }
+  .queue-empty p { font-size: 0.9rem; }
+
+  .queue-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .queue-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: slideIn 0.25s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .queue-item.sauna { border-left: 3px solid #C87A3A; }
+  .queue-item.red   { border-left: 3px solid var(--primary); }
+
+  .queue-item .q-left { display: flex; flex-direction: column; gap: 3px; }
+  .queue-item .q-name { font-size: 1rem; font-weight: 500; }
+  .queue-item .q-meta { font-size: 0.72rem; color: var(--muted); }
+  .queue-item .q-actions { display: flex; gap: 8px; }
+
+  .q-btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+    color: var(--text);
+  }
+
+  .q-btn:hover { border-color: var(--muted); }
+  .q-btn.start { background: var(--sage-dim); border-color: var(--sage); color: #6EC48A; }
+  .q-btn.done  { background: var(--primary-dim); border-color: var(--primary); color: var(--primary-hl); }
+
+  .notif-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: var(--primary);
+    border-radius: 50%;
+    margin-left: 6px;
+    animation: pulse 1.5s infinite;
+    vertical-align: middle;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 var(--pulse-ring); }
+    50%       { box-shadow: 0 0 0 6px transparent; }
+  }
+
+  .conn-status {
+    font-size: 0.7rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .conn-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+
+  .conn-dot.live { background: #6EC48A; }
+
+  #toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 20px;
+    font-size: 0.85rem;
+    color: var(--text);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 100;
+    white-space: nowrap;
+  }
+
+  #toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Beem <span>room alerts</span></div>
+  <div class="view-toggle">
+    <button class="active" onclick="switchView('front', event)">Front Desk</button>
+    <button onclick="switchView('back', event)" id="back-tab-label">Laundry Room</button>
+  </div>
+</header>
+
+<main>
+
+  <div class="view active" id="view-front">
+    <div class="conn-status"><span class="conn-dot" id="conn-dot"></span><span id="conn-label">Connecting...</span></div>
+
+    <div class="section-label">Red Light Therapy</div>
+    <div class="room-grid" id="red-grid"></div>
+
+    <div class="section-label">Sauna Rooms</div>
+    <div class="room-grid" id="sauna-grid"></div>
+
+    <button class="alert-btn" id="alert-all-btn" onclick="alertAll()" disabled>
+      Alert: all pending rooms
+    </button>
+  </div>
+
+  <div class="view" id="view-back">
+    <div class="sound-row">
+      Sound alerts
+      <button class="sound-toggle on" id="sound-toggle" onclick="toggleSound()"></button>
+    </div>
+    <div class="section-label">Cleaning queue</div>
+    <div class="queue-empty" id="queue-empty">
+      <div class="icon">✓</div>
+      <p>All rooms clear. Nothing needs cleaning right now.</p>
+    </div>
+    <div class="queue-list" id="queue-list" style="display:none"></div>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<!-- Firebase v8 compat — works directly in a plain HTML file, no bundler needed -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey:            "AIzaSyBSc1l3hNgQf5F8ybKJmuVsmXWboHQEGfc",
+    authDomain:        "been-cleaning-alert-system.firebaseapp.com",
+    databaseURL:       "https://been-cleaning-alert-system-default-rtdb.firebaseio.com",
+    projectId:         "been-cleaning-alert-system",
+    storageBucket:     "been-cleaning-alert-system.firebasestorage.app",
+    messagingSenderId: "127658346370",
+    appId:             "1:127658346370:web:3e1ebc787229735d53319b"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db       = firebase.database();
+  const roomsRef = db.ref('rooms');
+
+  const rooms = [
+    { id: 'R1', name: 'Room 1', type: 'red'   },
+    { id: 'S2', name: 'Room 2', type: 'sauna' },
+    { id: 'S3', name: 'Room 3', type: 'sauna' },
+    { id: 'S4', name: 'Room 4', type: 'sauna' },
+    { id: 'S5', name: 'Room 5', type: 'sauna' },
+    { id: 'R6', name: 'Room 6', type: 'red'   },
+  ];
+
+  const state    = {};
+  const prevStat = {};
+  rooms.forEach(r => {
+    state[r.id]    = { status: 'clear', alertedAt: null };
+    prevStat[r.id] = 'clear';
+  });
+
+  let soundOn  = true;
+  let audioCtx = null;
+
+  // ── FIREBASE SYNC ──────────────────────────────────
+
+  // Seed DB on first run
+  roomsRef.once('value', snap => {
+    if (!snap.exists()) {
+      const init = {};
+      rooms.forEach(r => init[r.id] = { status: 'clear', alertedAt: 0 });
+      roomsRef.set(init);
+    }
+  });
+
+  // Live listener — fires on every change from any device
+  roomsRef.on('value', snap => {
+    const data = snap.val();
+    if (!data) return;
+
+    setConnected(true);
+
+    rooms.forEach(r => {
+      const d = data[r.id];
+      if (!d) return;
+
+      const wasStatus = prevStat[r.id];
+      const nowStatus = d.status;
+
+      if (wasStatus !== 'needs-clean' && nowStatus === 'needs-clean') {
+        if (document.getElementById('view-back').classList.contains('active')) playAlert();
+      }
+      if (wasStatus === 'in-progress' && nowStatus === 'clear') {
+        if (document.getElementById('view-back').classList.contains('active')) playDone();
+      }
+
+      prevStat[r.id] = nowStatus;
+      state[r.id]    = { status: nowStatus, alertedAt: d.alertedAt || null };
+    });
+
+    buildFrontDesk();
+    buildQueue();
+  }, err => {
+    setConnected(false);
+    console.error('Firebase error:', err);
+  });
+
+  // Monitor connection state
+  db.ref('.info/connected').on('value', snap => {
+    setConnected(snap.val() === true);
+  });
+
+  function writeState() {
+    roomsRef.set(state);
+  }
+
+  function setConnected(yes) {
+    document.getElementById('conn-dot').classList.toggle('live', yes);
+    document.getElementById('conn-label').textContent = yes ? 'Live — syncing between devices' : 'Not connected';
+  }
+
+  // ── AUDIO ──────────────────────────────────────────
+
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+  }
+
+  function playAlert() {
+    if (!soundOn) return;
+    try {
+      const ctx = getAudioCtx();
+      [[440, 0], [660, 0.18]].forEach(([freq, delay]) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine'; osc.frequency.value = freq;
+        const t = ctx.currentTime + delay;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.35, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+        osc.start(t); osc.stop(t + 0.5);
+      });
+    } catch(e) {}
+  }
+
+  function playDone() {
+    if (!soundOn) return;
+    try {
+      const ctx = getAudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(360, ctx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
+    } catch(e) {}
+  }
+
+  function toggleSound() {
+    soundOn = !soundOn;
+    document.getElementById('sound-toggle').classList.toggle('on', soundOn);
+  }
+
+  // ── BUILD UI ───────────────────────────────────────
+
+  function buildFrontDesk() {
+    const saunaGrid = document.getElementById('sauna-grid');
+    const redGrid   = document.getElementById('red-grid');
+    saunaGrid.innerHTML = '';
+    redGrid.innerHTML   = '';
+
+    rooms.forEach(room => {
+      const s    = state[room.id].status;
+      const chip = s === 'needs-clean' ? 'Needs clean' : s === 'in-progress' ? 'Cleaning...' : '';
+
+      const btn = document.createElement('button');
+      btn.className = ['room-btn', room.type,
+        s === 'needs-clean' ? 'needs-clean' : '',
+        s === 'in-progress' ? 'in-progress' : ''
+      ].join(' ').trim();
+      btn.innerHTML = `
+        <span class="room-type-dot"></span>
+        <div class="status-chip">${chip}</div>
+        <span class="room-name">${room.name}</span>
+        <span class="room-type-label">${room.type === 'sauna' ? 'Sauna' : 'Red light therapy'}</span>
+      `;
+      btn.onclick = () => toggleAlert(room.id);
+      if (room.type === 'sauna') saunaGrid.appendChild(btn);
+      else redGrid.appendChild(btn);
+    });
+
+    updateAlertAllBtn();
+  }
+
+  function buildQueue() {
+    const list  = document.getElementById('queue-list');
+    const empty = document.getElementById('queue-empty');
+    list.innerHTML = '';
+
+    const pending = rooms.filter(r => ['needs-clean','in-progress'].includes(state[r.id].status));
+
+    if (pending.length === 0) {
+      empty.style.display = 'block';
+      list.style.display  = 'none';
+      updateBackTab(0);
+      return;
+    }
+
+    empty.style.display = 'none';
+    list.style.display  = 'flex';
+
+    pending.forEach(room => {
+      const s   = state[room.id].status;
+      const ago = timeSince(state[room.id].alertedAt);
+      const item = document.createElement('div');
+      item.className = `queue-item ${room.type}`;
+      item.innerHTML = `
+        <div class="q-left">
+          <span class="q-name">${room.name}</span>
+          <span class="q-meta">${room.type === 'sauna' ? 'Sauna' : 'Red light therapy'} &middot; alerted ${ago}</span>
+        </div>
+        <div class="q-actions">
+          ${s === 'needs-clean' ? `<button class="q-btn start" onclick="startCleaning('${room.id}')">Start</button>` : ''}
+          ${s === 'in-progress' ? `<button class="q-btn done" onclick="markDone('${room.id}')">Done</button>` : ''}
+        </div>
+      `;
+      list.appendChild(item);
+    });
+
+    updateBackTab(pending.length);
+  }
+
+  // ── ACTIONS ────────────────────────────────────────
+
+  function toggleAlert(id) {
+    const s    = state[id].status;
+    const room = rooms.find(r => r.id === id);
+    if (s === 'clear') {
+      state[id] = { status: 'needs-clean', alertedAt: Date.now() };
+      playAlert();
+      showToast(`${room.name} added to cleaning queue`);
+    } else if (s === 'needs-clean') {
+      state[id] = { status: 'clear', alertedAt: null };
+      showToast(`${room.name} cleared`);
+    }
+    writeState();
+  }
+
+  function alertAll() {
+    let count = 0;
+    rooms.forEach(r => {
+      if (state[r.id].status === 'clear') {
+        state[r.id] = { status: 'needs-clean', alertedAt: Date.now() };
+        count++;
+      }
+    });
+    if (count) { playAlert(); showToast(`${count} rooms added to queue`); }
+    writeState();
+  }
+
+  function startCleaning(id) {
+    state[id].status = 'in-progress';
+    showToast(`Cleaning ${rooms.find(r => r.id === id).name}...`);
+    writeState();
+  }
+
+  function markDone(id) {
+    state[id] = { status: 'clear', alertedAt: null };
+    playDone();
+    showToast(`${rooms.find(r => r.id === id).name} is clean`);
+    writeState();
+  }
+
+  // ── HELPERS ────────────────────────────────────────
+
+  function updateAlertAllBtn() {
+    const btn     = document.getElementById('alert-all-btn');
+    const pending = rooms.filter(r => state[r.id].status === 'needs-clean').length;
+    const allDone = rooms.every(r => state[r.id].status === 'clear');
+    btn.disabled    = allDone;
+    btn.textContent = pending > 0 ? `${pending} room${pending>1?'s':''} pending — alert all` : 'Alert: all pending rooms';
+  }
+
+  function updateBackTab(count) {
+    const label = document.getElementById('back-tab-label');
+    label.innerHTML = count > 0 ? `Laundry Room <span class="notif-dot"></span>` : 'Laundry Room';
+  }
+
+  function timeSince(ts) {
+    if (!ts) return 'just now';
+    const secs = Math.floor((Date.now() - ts) / 1000);
+    if (secs < 60)   return 'just now';
+    if (secs < 3600) return `${Math.floor(secs/60)}m ago`;
+    return `${Math.floor(secs/3600)}h ago`;
+  }
+
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function switchView(v, e) {
+    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.view-toggle button').forEach(el => el.classList.remove('active'));
+    document.getElementById(`view-${v}`).classList.add('active');
+    if (e && e.target) e.target.classList.add('active');
+    if (v === 'back') buildQueue();
+  }
+
+  setInterval(() => {
+    if (document.getElementById('view-back').classList.contains('active')) buildQueue();
+  }, 60000);
+</script>
+</body>
+</html>
