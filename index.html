@@ -57,30 +57,6 @@
     font-family: 'DM Sans', sans-serif;
   }
 
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .user-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    font-size: 0.8rem;
-  }
-
-  .user-name {
-    font-weight: 500;
-    color: var(--text);
-  }
-
-  .user-badge {
-    font-size: 0.65rem;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
   .view-toggle {
     display: flex;
     background: var(--surface);
@@ -354,123 +330,15 @@
   }
 
   #toast.show { transform: translateX(-50%) translateY(0); }
-
-  .user-setup {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    gap: 20px;
-  }
-
-  .user-setup.hidden { display: none; }
-
-  .setup-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 32px 24px;
-    text-align: center;
-    max-width: 300px;
-  }
-
-  .setup-card h2 {
-    font-size: 1.2rem;
-    margin-bottom: 8px;
-    color: var(--text);
-  }
-
-  .setup-card p {
-    font-size: 0.9rem;
-    color: var(--muted);
-    margin-bottom: 20px;
-  }
-
-  .setup-card input {
-    width: 100%;
-    padding: 10px 12px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    margin-bottom: 12px;
-    font-size: 0.9rem;
-  }
-
-  .setup-card input::placeholder {
-    color: var(--muted);
-  }
-
-  .setup-card button {
-    width: 100%;
-    padding: 10px 0;
-    background: var(--primary);
-    border: none;
-    border-radius: 8px;
-    color: #fff;
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .setup-card button:hover { background: var(--primary-hl); }
-  .setup-card button:active { transform: scale(0.98); }
-
-  .active-users {
-    font-size: 0.7rem;
-    color: var(--muted);
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
-  }
-
-  .user-avatar {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: var(--primary-dim);
-    color: var(--primary-hl);
-    font-size: 0.7rem;
-    font-weight: 600;
-    margin-right: 4px;
-    flex-shrink: 0;
-  }
 </style>
 </head>
 <body>
 
-<div class="user-setup" id="user-setup">
-  <div class="setup-card">
-    <h2>Welcome to Beem</h2>
-    <p>Enter your name to get started</p>
-    <input type="text" id="user-name-input" placeholder="Your name" maxlength="20" />
-    <button onclick="initializeUser()">Enter</button>
-    <div class="active-users">
-      <div>Active users: <span id="active-user-count">0</span></div>
-    </div>
-  </div>
-</div>
-
 <header>
   <div class="logo">Beem <span>room alerts</span></div>
-  <div class="header-right">
-    <div class="user-info">
-      <div class="user-name" id="current-user-name">Loading...</div>
-      <div class="user-badge" id="current-user-badge">connecting</div>
-    </div>
-    <div class="view-toggle">
-      <button class="active" onclick="switchView('front', event)">Front Desk</button>
-      <button onclick="switchView('back', event)" id="back-tab-label">Laundry Room</button>
-    </div>
+  <div class="view-toggle">
+    <button class="active" onclick="switchView('front', event)">Front Desk</button>
+    <button onclick="switchView('back', event)" id="back-tab-label">Laundry Room</button>
   </div>
 </header>
 
@@ -507,7 +375,6 @@
 
 <div id="toast"></div>
 
-<!-- Firebase v8 compat — works directly in a plain HTML file, no bundler needed -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -525,15 +392,14 @@
   firebase.initializeApp(firebaseConfig);
   const db       = firebase.database();
   const roomsRef = db.ref('rooms');
-  const usersRef = db.ref('users');
 
   const rooms = [
     { id: 'R1', name: 'Room 1', type: 'red'   },
     { id: 'S2', name: 'Room 2', type: 'sauna' },
     { id: 'S3', name: 'Room 3', type: 'sauna' },
     { id: 'S4', name: 'Room 4', type: 'sauna' },
-    { id: 'S5', name: 'Room 5', type: 'sauna' },
-    { id: 'R6', name: 'Room 6', type: 'red'   },
+    { id: 'R5', name: 'Room 5', type: 'red'   },
+    { id: 'S6', name: 'Room 6', type: 'sauna' },
   ];
 
   const state    = {};
@@ -545,71 +411,7 @@
 
   let soundOn  = true;
   let audioCtx = null;
-  let currentUser = null;
-  let currentUserId = null;
 
-  // ── USER MANAGEMENT ────────────────────────────────
-
-  function initializeUser() {
-    const nameInput = document.getElementById('user-name-input');
-    const name = nameInput.value.trim();
-    
-    if (!name) {
-      showToast('Please enter your name');
-      return;
-    }
-
-    currentUserId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    currentUser = name;
-
-    // Register user in Firebase
-    usersRef.child(currentUserId).set({
-      name: currentUser,
-      lastSeen: firebase.database.ServerValue.TIMESTAMP,
-      online: true
-    });
-
-    // Remove user when they leave
-    window.addEventListener('beforeunload', () => {
-      usersRef.child(currentUserId).remove();
-    });
-
-    // Periodic heartbeat
-    setInterval(() => {
-      if (currentUserId) {
-        usersRef.child(currentUserId).update({
-          lastSeen: firebase.database.ServerValue.TIMESTAMP
-        });
-      }
-    }, 30000);
-
-    // Hide setup screen
-    document.getElementById('user-setup').classList.add('hidden');
-    document.getElementById('current-user-name').textContent = currentUser;
-    document.getElementById('current-user-badge').textContent = 'online';
-
-    buildFrontDesk();
-    buildQueue();
-  }
-
-  // Monitor active users
-  usersRef.on('value', snap => {
-    const users = snap.val() || {};
-    const now = Date.now();
-    let activeCount = 0;
-
-    Object.entries(users).forEach(([id, user]) => {
-      const lastSeen = user.lastSeen || 0;
-      const isActive = (now - lastSeen) < 60000; // Active if seen in last 60 seconds
-      if (isActive) activeCount++;
-    });
-
-    document.getElementById('active-user-count').textContent = activeCount;
-  });
-
-  // ── FIREBASE SYNC ──────────────────────────────────
-
-  // Seed DB on first run
   roomsRef.once('value', snap => {
     if (!snap.exists()) {
       const init = {};
@@ -618,54 +420,36 @@
     }
   });
 
-  // Live listener — fires on every change from any device
   roomsRef.on('value', snap => {
     const data = snap.val();
     if (!data) return;
-
     setConnected(true);
-
     rooms.forEach(r => {
       const d = data[r.id];
       if (!d) return;
-
       const wasStatus = prevStat[r.id];
       const nowStatus = d.status;
-
       if (wasStatus !== 'needs-clean' && nowStatus === 'needs-clean') {
         if (document.getElementById('view-back').classList.contains('active')) playAlert();
       }
       if (wasStatus === 'in-progress' && nowStatus === 'clear') {
         if (document.getElementById('view-back').classList.contains('active')) playDone();
       }
-
       prevStat[r.id] = nowStatus;
       state[r.id]    = { status: nowStatus, alertedAt: d.alertedAt || null };
     });
-
     buildFrontDesk();
     buildQueue();
-  }, err => {
-    setConnected(false);
-    console.error('Firebase error:', err);
-  });
+  }, err => { setConnected(false); });
 
-  // Monitor connection state
-  db.ref('.info/connected').on('value', snap => {
-    setConnected(snap.val() === true);
-  });
+  db.ref('.info/connected').on('value', snap => { setConnected(snap.val() === true); });
 
-  function writeState() {
-    roomsRef.set(state);
-  }
+  function writeState() { roomsRef.set(state); }
 
   function setConnected(yes) {
     document.getElementById('conn-dot').classList.toggle('live', yes);
     document.getElementById('conn-label').textContent = yes ? 'Live — syncing between devices' : 'Not connected';
-    document.getElementById('current-user-badge').textContent = yes ? 'online' : 'offline';
   }
-
-  // ── AUDIO ──────────────────────────────────────────
 
   function getAudioCtx() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -711,18 +495,14 @@
     document.getElementById('sound-toggle').classList.toggle('on', soundOn);
   }
 
-  // ── BUILD UI ───────────────────────────────────────
-
   function buildFrontDesk() {
     const saunaGrid = document.getElementById('sauna-grid');
     const redGrid   = document.getElementById('red-grid');
     saunaGrid.innerHTML = '';
     redGrid.innerHTML   = '';
-
     rooms.forEach(room => {
       const s    = state[room.id].status;
       const chip = s === 'needs-clean' ? 'Needs clean' : s === 'in-progress' ? 'Cleaning...' : '';
-
       const btn = document.createElement('button');
       btn.className = ['room-btn', room.type,
         s === 'needs-clean' ? 'needs-clean' : '',
@@ -738,7 +518,6 @@
       if (room.type === 'sauna') saunaGrid.appendChild(btn);
       else redGrid.appendChild(btn);
     });
-
     updateAlertAllBtn();
   }
 
@@ -746,19 +525,15 @@
     const list  = document.getElementById('queue-list');
     const empty = document.getElementById('queue-empty');
     list.innerHTML = '';
-
     const pending = rooms.filter(r => ['needs-clean','in-progress'].includes(state[r.id].status));
-
     if (pending.length === 0) {
       empty.style.display = 'block';
       list.style.display  = 'none';
       updateBackTab(0);
       return;
     }
-
     empty.style.display = 'none';
     list.style.display  = 'flex';
-
     pending.forEach(room => {
       const s   = state[room.id].status;
       const ago = timeSince(state[room.id].alertedAt);
@@ -776,29 +551,24 @@
       `;
       list.appendChild(item);
     });
-
     updateBackTab(pending.length);
   }
 
-  // ── ACTIONS ────────────────────────────────────────
-
   function toggleAlert(id) {
-    if (!currentUser) return;
     const s    = state[id].status;
     const room = rooms.find(r => r.id === id);
     if (s === 'clear') {
       state[id] = { status: 'needs-clean', alertedAt: Date.now() };
       playAlert();
-      showToast(`${currentUser}: ${room.name} added to cleaning queue`);
+      showToast(`${room.name} added to cleaning queue`);
     } else if (s === 'needs-clean') {
       state[id] = { status: 'clear', alertedAt: null };
-      showToast(`${currentUser}: ${room.name} cleared`);
+      showToast(`${room.name} cleared`);
     }
     writeState();
   }
 
   function alertAll() {
-    if (!currentUser) return;
     let count = 0;
     rooms.forEach(r => {
       if (state[r.id].status === 'clear') {
@@ -806,28 +576,22 @@
         count++;
       }
     });
-    if (count) { playAlert(); showToast(`${currentUser}: ${count} rooms added to queue`); }
+    if (count) { playAlert(); showToast(`${count} rooms added to queue`); }
     writeState();
   }
 
   function startCleaning(id) {
-    if (!currentUser) return;
     state[id].status = 'in-progress';
-    const room = rooms.find(r => r.id === id);
-    showToast(`${currentUser}: Cleaning ${room.name}...`);
+    showToast(`Cleaning ${rooms.find(r => r.id === id).name}...`);
     writeState();
   }
 
   function markDone(id) {
-    if (!currentUser) return;
     state[id] = { status: 'clear', alertedAt: null };
-    const room = rooms.find(r => r.id === id);
     playDone();
-    showToast(`${currentUser}: ${room.name} is clean`);
+    showToast(`${rooms.find(r => r.id === id).name} is clean`);
     writeState();
   }
-
-  // ── HELPERS ────────────────────────────────────────
 
   function updateAlertAllBtn() {
     const btn     = document.getElementById('alert-all-btn');
@@ -866,15 +630,6 @@
     if (e && e.target) e.target.classList.add('active');
     if (v === 'back') buildQueue();
   }
-
-  // Allow Enter key to submit name
-  document.addEventListener('DOMContentLoaded', () => {
-    const nameInput = document.getElementById('user-name-input');
-    nameInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') initializeUser();
-    });
-    nameInput.focus();
-  });
 
   setInterval(() => {
     if (document.getElementById('view-back').classList.contains('active')) buildQueue();
