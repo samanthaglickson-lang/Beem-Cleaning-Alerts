@@ -10,18 +10,24 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:         #100808;
-    --surface:    #1A0C0C;
-    --card:       #221010;
-    --border:     #3A1A1A;
-    --primary:    #D94040;
-    --primary-dim:#6B1A1A;
-    --primary-hl: #E86060;
-    --sage:       #4E7A61;
-    --sage-dim:   #243D2F;
-    --text:       #F0E6E6;
-    --muted:      #7A6060;
-    --pulse-ring: rgba(217,64,64,0.25);
+    --bg:          #100808;
+    --surface:     #1A0C0C;
+    --card:        #221010;
+    --border:      #3A1A1A;
+    --primary:     #D94040;
+    --primary-dim: #6B1A1A;
+    --primary-hl:  #E86060;
+    --sage:        #4E7A61;
+    --sage-dim:    #243D2F;
+    --amber:       #C88C2A;
+    --amber-dim:   #5A3A0A;
+    --amber-hl:    #E8A840;
+    --mint:        #3DAA7A;
+    --mint-dim:    #1A4A34;
+    --mint-hl:     #5DCCA0;
+    --text:        #F0E6E6;
+    --muted:       #7A6060;
+    --pulse-ring:  rgba(217,64,64,0.25);
   }
 
   body {
@@ -88,7 +94,7 @@
   main {
     flex: 1;
     padding: 28px 20px;
-    max-width: 600px;
+    max-width: 640px;
     width: 100%;
     margin: 0 auto;
   }
@@ -114,83 +120,153 @@
     gap: 10px;
   }
 
-  .room-btn {
+  .room-card {
     position: relative;
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px 16px 16px;
-    cursor: pointer;
+    border-radius: 14px;
+    padding: 14px;
     transition: all 0.18s;
-    text-align: left;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
     overflow: hidden;
   }
 
-  .room-btn:hover { border-color: var(--primary-dim); background: #2A1212; }
-  .room-btn:active { transform: scale(0.98); }
+  .room-card.in-use { border-color: var(--amber); background: #1E1608; }
+  .room-card.needs-clean { border-color: var(--primary-dim); background: #1E0E0E; }
+  .room-card.in-progress { border-color: var(--sage); background: #101A12; }
 
-  .room-btn .room-type-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    display: inline-block;
+  .room-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 10px;
   }
 
-  .room-btn.sauna .room-type-dot { background: #C87A3A; }
-  .room-btn.red   .room-type-dot { background: var(--primary); }
+  .room-name-wrap { display: flex; align-items: center; gap: 7px; }
 
-  .room-btn .room-name {
-    display: block;
-    font-size: 1rem;
-    font-weight: 500;
-    margin-bottom: 2px;
+  .room-type-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
   }
 
-  .room-btn .room-type-label {
-    font-size: 0.72rem;
-    color: var(--muted);
-    font-weight: 400;
-  }
+  .red .room-type-dot   { background: var(--primary); }
+  .sauna .room-type-dot { background: var(--amber); }
 
-  .room-btn .status-chip {
-    position: absolute;
-    top: 12px; right: 12px;
-    font-size: 0.65rem;
-    font-weight: 600;
+  .room-name { font-size: 0.95rem; font-weight: 600; }
+  .room-sub  { font-size: 0.68rem; color: var(--muted); margin-top: 1px; }
+
+  .status-chip {
+    font-size: 0.62rem;
+    font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     padding: 3px 8px;
     border-radius: 20px;
-    opacity: 0;
-    transition: opacity 0.2s;
+    white-space: nowrap;
   }
 
-  .room-btn.needs-clean .status-chip { opacity: 1; background: var(--primary-dim); color: var(--primary-hl); }
-  .room-btn.in-progress .status-chip { opacity: 1; background: var(--sage-dim); color: #6EC48A; }
-  .room-btn.needs-clean { border-color: var(--primary-dim); background: #1E0E0E; }
-  .room-btn.in-progress { border-color: var(--sage-dim); background: #101A12; }
+  .chip-clean { background: var(--primary-dim); color: var(--primary-hl); }
+  .chip-use   { background: var(--amber-dim);   color: var(--amber-hl); }
+  .chip-prog  { background: var(--sage-dim);    color: var(--mint-hl); }
 
-  .alert-btn {
-    width: 100%;
-    margin-top: 16px;
-    padding: 13px 0;
-    background: var(--primary);
-    border: none;
-    border-radius: 10px;
-    color: #fff;
-    font-family: 'DM Sans', sans-serif;
+  .countdown-wrap {
+    text-align: center;
+    padding: 8px 0 10px;
+    display: none;
+  }
+
+  .room-card.in-use .countdown-wrap { display: block; }
+
+  .countdown-ring {
+    position: relative;
+    width: 64px; height: 64px;
+    margin: 0 auto 6px;
+  }
+
+  .countdown-ring svg { transform: rotate(-90deg); width: 64px; height: 64px; }
+  .countdown-ring circle { fill: none; stroke-width: 4; }
+  .ring-bg   { stroke: var(--border); }
+  .ring-fill { stroke: var(--amber); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+
+  .countdown-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
     font-size: 0.85rem;
     font-weight: 600;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    transition: all 0.18s;
+    color: var(--amber-hl);
+    font-variant-numeric: tabular-nums;
   }
 
-  .alert-btn:hover { background: var(--primary-hl); }
-  .alert-btn:active { transform: scale(0.98); }
-  .alert-btn:disabled { background: var(--border); color: var(--muted); cursor: default; transform: none; }
+  .countdown-label { font-size: 0.68rem; color: var(--muted); }
+
+  .room-actions { display: flex; gap: 6px; margin-top: 10px; }
+
+  .room-action-btn {
+    flex: 1;
+    padding: 8px 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .room-action-btn:hover { border-color: var(--muted); color: var(--text); }
+  .room-action-btn.btn-use   { background: var(--amber-dim);   border-color: var(--amber);   color: var(--amber-hl); }
+  .room-action-btn.btn-clean { background: var(--primary-dim); border-color: var(--primary); color: var(--primary-hl); }
+  .room-action-btn.btn-end   { background: var(--surface);     border-color: var(--border);  color: var(--muted); }
+
+  .mint-section { margin-top: 28px; }
+
+  .mint-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: 1.5px solid var(--mint);
+    background: var(--mint-dim);
+    color: var(--mint-hl);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .mint-btn:hover  { background: #1F5A40; }
+  .mint-btn:active { transform: scale(0.98); }
+  .mint-icon { font-size: 1.3rem; }
+
+  .conn-status {
+    font-size: 0.7rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .conn-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+
+  .conn-dot.live { background: #6EC48A; }
 
   .sound-row {
     display: flex;
@@ -226,12 +302,7 @@
 
   .sound-toggle.on::after { left: 19px; background: var(--primary-hl); }
 
-  .queue-empty {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--muted);
-  }
-
+  .queue-empty { text-align: center; padding: 60px 20px; color: var(--muted); }
   .queue-empty .icon { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.4; }
   .queue-empty p { font-size: 0.9rem; }
 
@@ -253,8 +324,9 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  .queue-item.sauna { border-left: 3px solid #C87A3A; }
+  .queue-item.sauna { border-left: 3px solid var(--amber); }
   .queue-item.red   { border-left: 3px solid var(--primary); }
+  .queue-item.mint  { border-left: 3px solid var(--mint); }
 
   .queue-item .q-left { display: flex; flex-direction: column; gap: 3px; }
   .queue-item .q-name { font-size: 1rem; font-weight: 500; }
@@ -274,9 +346,9 @@
     color: var(--text);
   }
 
-  .q-btn:hover { border-color: var(--muted); }
-  .q-btn.start { background: var(--sage-dim); border-color: var(--sage); color: #6EC48A; }
-  .q-btn.done  { background: var(--primary-dim); border-color: var(--primary); color: var(--primary-hl); }
+  .q-btn.start     { background: var(--sage-dim);  border-color: var(--sage);    color: #6EC48A; }
+  .q-btn.done      { background: var(--primary-dim); border-color: var(--primary); color: var(--primary-hl); }
+  .q-btn.mint-done { background: var(--mint-dim);  border-color: var(--mint);    color: var(--mint-hl); }
 
   .notif-dot {
     display: inline-block;
@@ -293,24 +365,48 @@
     50%       { box-shadow: 0 0 0 6px transparent; }
   }
 
-  .conn-status {
-    font-size: 0.7rem;
-    color: var(--muted);
-    display: flex;
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 20px;
+    justify-content: center;
   }
 
-  .conn-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--muted);
-    transition: background 0.3s;
-    flex-shrink: 0;
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px;
+    max-width: 340px;
+    width: 90%;
+    text-align: center;
   }
 
-  .conn-dot.live { background: #6EC48A; }
+  .modal .modal-icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .modal h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: var(--amber-hl); }
+  .modal p  { font-size: 0.85rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+
+  .modal-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--primary);
+    color: #fff;
+    margin-top: 8px;
+    transition: background 0.15s;
+  }
+
+  .modal-btn:hover { background: var(--primary-hl); }
 
   #toast {
     position: fixed;
@@ -345,7 +441,10 @@
 <main>
 
   <div class="view active" id="view-front">
-    <div class="conn-status"><span class="conn-dot" id="conn-dot"></span><span id="conn-label">Connecting...</span></div>
+    <div class="conn-status">
+      <span class="conn-dot" id="conn-dot"></span>
+      <span id="conn-label">Connecting...</span>
+    </div>
 
     <div class="section-label">Red Light Therapy</div>
     <div class="room-grid" id="red-grid"></div>
@@ -353,9 +452,12 @@
     <div class="section-label">Sauna Rooms</div>
     <div class="room-grid" id="sauna-grid"></div>
 
-    <button class="alert-btn" id="alert-all-btn" onclick="alertAll()" disabled>
-      Alert: all pending rooms
-    </button>
+    <div class="mint-section">
+      <button class="mint-btn" onclick="alertMintTowels()">
+        <span class="mint-icon">🌿</span>
+        Mint towels needed
+      </button>
+    </div>
   </div>
 
   <div class="view" id="view-back">
@@ -363,15 +465,24 @@
       Sound alerts
       <button class="sound-toggle on" id="sound-toggle" onclick="toggleSound()"></button>
     </div>
-    <div class="section-label">Cleaning queue</div>
+    <div class="section-label">Queue</div>
     <div class="queue-empty" id="queue-empty">
       <div class="icon">✓</div>
-      <p>All rooms clear. Nothing needs cleaning right now.</p>
+      <p>All clear. Nothing needs attention right now.</p>
     </div>
     <div class="queue-list" id="queue-list" style="display:none"></div>
   </div>
 
 </main>
+
+<div class="modal-overlay" id="session-modal">
+  <div class="modal">
+    <div class="modal-icon">⏰</div>
+    <h3 id="modal-room-name">Session ended</h3>
+    <p>The session timer has finished. When the client leaves, tap <strong>Flag for cleaning</strong> to alert the laundry room.</p>
+    <button class="modal-btn" onclick="closeModal()">Got it</button>
+  </div>
+</div>
 
 <div id="toast"></div>
 
@@ -392,32 +503,39 @@
   firebase.initializeApp(firebaseConfig);
   const db       = firebase.database();
   const roomsRef = db.ref('rooms');
+  const mintRef  = db.ref('mint');
 
   const rooms = [
-    { id: 'R1', name: 'Room 1', type: 'red'   },
-    { id: 'S2', name: 'Room 2', type: 'sauna' },
-    { id: 'S3', name: 'Room 3', type: 'sauna' },
-    { id: 'S4', name: 'Room 4', type: 'sauna' },
-    { id: 'R5', name: 'Room 5', type: 'red'   },
-    { id: 'S6', name: 'Room 6', type: 'sauna' },
+    { id: 'R1', name: 'Room 1', type: 'red',   duration: 15 * 60 },
+    { id: 'S2', name: 'Room 2', type: 'sauna', duration: 40 * 60 },
+    { id: 'S3', name: 'Room 3', type: 'sauna', duration: 40 * 60 },
+    { id: 'S4', name: 'Room 4', type: 'sauna', duration: 40 * 60 },
+    { id: 'R5', name: 'Room 5', type: 'red',   duration: 15 * 60 },
+    { id: 'S6', name: 'Room 6', type: 'sauna', duration: 40 * 60 },
   ];
 
-  const state    = {};
+  const state = {};
   const prevStat = {};
   rooms.forEach(r => {
-    state[r.id]    = { status: 'clear', alertedAt: null };
+    state[r.id]    = { status: 'clear', alertedAt: null, sessionStart: null };
     prevStat[r.id] = 'clear';
   });
 
-  let soundOn  = true;
-  let audioCtx = null;
+  let mintState = { active: false, alertedAt: null };
+  let soundOn   = true;
+  let audioCtx  = null;
+  let tickTimer = null;
 
   roomsRef.once('value', snap => {
     if (!snap.exists()) {
       const init = {};
-      rooms.forEach(r => init[r.id] = { status: 'clear', alertedAt: 0 });
+      rooms.forEach(r => init[r.id] = { status: 'clear', alertedAt: 0, sessionStart: 0 });
       roomsRef.set(init);
     }
+  });
+
+  mintRef.once('value', snap => {
+    if (!snap.exists()) mintRef.set({ active: false, alertedAt: 0 });
   });
 
   roomsRef.on('value', snap => {
@@ -430,25 +548,71 @@
       const wasStatus = prevStat[r.id];
       const nowStatus = d.status;
       if (wasStatus !== 'needs-clean' && nowStatus === 'needs-clean') {
-        if (document.getElementById('view-back').classList.contains('active')) playAlert();
+        if (isBackView()) playAlert();
       }
       if (wasStatus === 'in-progress' && nowStatus === 'clear') {
-        if (document.getElementById('view-back').classList.contains('active')) playDone();
+        if (isBackView()) playDone();
       }
       prevStat[r.id] = nowStatus;
-      state[r.id]    = { status: nowStatus, alertedAt: d.alertedAt || null };
+      state[r.id] = { status: nowStatus, alertedAt: d.alertedAt || null, sessionStart: d.sessionStart || null };
     });
     buildFrontDesk();
     buildQueue();
-  }, err => { setConnected(false); });
+  }, () => setConnected(false));
 
-  db.ref('.info/connected').on('value', snap => { setConnected(snap.val() === true); });
+  mintRef.on('value', snap => {
+    const data = snap.val();
+    if (!data) return;
+    const wasActive = mintState.active;
+    mintState = { active: data.active, alertedAt: data.alertedAt || null };
+    if (!wasActive && data.active && isBackView()) playAlert();
+    buildQueue();
+  });
 
-  function writeState() { roomsRef.set(state); }
+  db.ref('.info/connected').on('value', snap => setConnected(snap.val() === true));
+
+  function writeRooms() { roomsRef.set(state); }
+  function writeMint()  { mintRef.set(mintState); }
 
   function setConnected(yes) {
     document.getElementById('conn-dot').classList.toggle('live', yes);
     document.getElementById('conn-label').textContent = yes ? 'Live — syncing between devices' : 'Not connected';
+  }
+
+  function startTick() {
+    if (tickTimer) return;
+    tickTimer = setInterval(() => {
+      let anyInUse = false;
+      rooms.forEach(r => {
+        if (state[r.id].status === 'in-use') {
+          anyInUse = true;
+          const room = rooms.find(x => x.id === r.id);
+          const elapsed = Math.floor((Date.now() - state[r.id].sessionStart) / 1000);
+          const remaining = Math.max(0, room.duration - elapsed);
+          updateCountdown(r.id, remaining, room.duration);
+          if (remaining === 0 && !isBackView()) showSessionEndedModal(room.name);
+        }
+      });
+      if (!anyInUse) { clearInterval(tickTimer); tickTimer = null; }
+    }, 1000);
+  }
+
+  function updateCountdown(id, remaining, total) {
+    const card = document.querySelector(`.room-card[data-id="${id}"]`);
+    if (!card) return;
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    const txt  = card.querySelector('.countdown-text');
+    const ring = card.querySelector('.ring-fill');
+    const lbl  = card.querySelector('.countdown-label');
+    if (txt) txt.textContent = `${mins}:${String(secs).padStart(2,'0')}`;
+    if (lbl) lbl.textContent = remaining === 0 ? 'Session ended' : 'remaining';
+    if (ring) {
+      const circ = 2 * Math.PI * 28;
+      ring.style.strokeDasharray  = circ;
+      ring.style.strokeDashoffset = circ * (1 - remaining / total);
+      ring.style.stroke = remaining === 0 ? 'var(--primary)' : 'var(--amber)';
+    }
   }
 
   function getAudioCtx() {
@@ -500,41 +664,105 @@
     const redGrid   = document.getElementById('red-grid');
     saunaGrid.innerHTML = '';
     redGrid.innerHTML   = '';
+
     rooms.forEach(room => {
       const s    = state[room.id].status;
-      const chip = s === 'needs-clean' ? 'Needs clean' : s === 'in-progress' ? 'Cleaning...' : '';
-      const btn = document.createElement('button');
-      btn.className = ['room-btn', room.type,
-        s === 'needs-clean' ? 'needs-clean' : '',
-        s === 'in-progress' ? 'in-progress' : ''
-      ].join(' ').trim();
-      btn.innerHTML = `
-        <span class="room-type-dot"></span>
-        <div class="status-chip">${chip}</div>
-        <span class="room-name">${room.name}</span>
-        <span class="room-type-label">${room.type === 'sauna' ? 'Sauna' : 'Red light therapy'}</span>
+      const card = document.createElement('div');
+      card.className = `room-card ${room.type} ${s === 'in-use' ? 'in-use' : ''} ${s === 'needs-clean' ? 'needs-clean' : ''} ${s === 'in-progress' ? 'in-progress' : ''}`.trim();
+      card.dataset.id = room.id;
+
+      const chipLabel = s === 'in-use' ? 'In use' : s === 'needs-clean' ? 'Needs clean' : s === 'in-progress' ? 'Cleaning' : '';
+      const chipClass = s === 'in-use' ? 'chip-use' : s === 'needs-clean' ? 'chip-clean' : s === 'in-progress' ? 'chip-prog' : '';
+
+      const circ      = 2 * Math.PI * 28;
+      const elapsed   = state[room.id].sessionStart ? Math.floor((Date.now() - state[room.id].sessionStart) / 1000) : 0;
+      const remaining = Math.max(0, room.duration - elapsed);
+      const pct       = remaining / room.duration;
+      const mins      = Math.floor(remaining / 60);
+      const secs      = remaining % 60;
+
+      card.innerHTML = `
+        <div class="room-card-top">
+          <div class="room-name-wrap">
+            <span class="room-type-dot"></span>
+            <div>
+              <div class="room-name">${room.name}</div>
+              <div class="room-sub">${room.type === 'sauna' ? 'Sauna · 40 min' : 'Red light · 15 min'}</div>
+            </div>
+          </div>
+          ${chipLabel ? `<span class="status-chip ${chipClass}">${chipLabel}</span>` : ''}
+        </div>
+        <div class="countdown-wrap">
+          <div class="countdown-ring">
+            <svg viewBox="0 0 64 64">
+              <circle class="ring-bg"   cx="32" cy="32" r="28"/>
+              <circle class="ring-fill" cx="32" cy="32" r="28"
+                style="stroke-dasharray:${circ};stroke-dashoffset:${circ*(1-pct)};stroke:${remaining===0?'var(--primary)':'var(--amber)'}"/>
+            </svg>
+            <div class="countdown-text">${mins}:${String(secs).padStart(2,'0')}</div>
+          </div>
+          <div class="countdown-label">${remaining === 0 ? 'Session ended' : 'remaining'}</div>
+        </div>
+        <div class="room-actions">
+          ${s === 'clear' ? `
+            <button class="room-action-btn btn-use"   onclick="startSession('${room.id}')">▶ In use</button>
+            <button class="room-action-btn btn-clean" onclick="flagClean('${room.id}')">🧹 Flag clean</button>
+          ` : ''}
+          ${s === 'in-use' ? `
+            <button class="room-action-btn btn-end"   onclick="endSession('${room.id}')">◼ End session</button>
+            <button class="room-action-btn btn-clean" onclick="flagClean('${room.id}')">🧹 Flag clean</button>
+          ` : ''}
+          ${s === 'needs-clean' ? `
+            <button class="room-action-btn btn-end" onclick="clearRoom('${room.id}')">✕ Clear</button>
+          ` : ''}
+          ${s === 'in-progress' ? `
+            <span style="font-size:0.72rem;color:var(--muted);padding:8px 4px;">Cleaning in progress...</span>
+          ` : ''}
+        </div>
       `;
-      btn.onclick = () => toggleAlert(room.id);
-      if (room.type === 'sauna') saunaGrid.appendChild(btn);
-      else redGrid.appendChild(btn);
+
+      if (room.type === 'sauna') saunaGrid.appendChild(card);
+      else redGrid.appendChild(card);
     });
-    updateAlertAllBtn();
+
+    if (rooms.some(r => state[r.id].status === 'in-use')) startTick();
   }
 
   function buildQueue() {
     const list  = document.getElementById('queue-list');
     const empty = document.getElementById('queue-empty');
     list.innerHTML = '';
-    const pending = rooms.filter(r => ['needs-clean','in-progress'].includes(state[r.id].status));
-    if (pending.length === 0) {
+
+    const cleanPending = rooms.filter(r => ['needs-clean','in-progress'].includes(state[r.id].status));
+    const hasMint      = mintState.active;
+    const total        = cleanPending.length + (hasMint ? 1 : 0);
+
+    if (total === 0) {
       empty.style.display = 'block';
       list.style.display  = 'none';
       updateBackTab(0);
       return;
     }
+
     empty.style.display = 'none';
     list.style.display  = 'flex';
-    pending.forEach(room => {
+
+    if (hasMint) {
+      const item = document.createElement('div');
+      item.className = 'queue-item mint';
+      item.innerHTML = `
+        <div class="q-left">
+          <span class="q-name">🌿 Mint towels needed</span>
+          <span class="q-meta">Requested ${timeSince(mintState.alertedAt)}</span>
+        </div>
+        <div class="q-actions">
+          <button class="q-btn mint-done" onclick="clearMint()">Done</button>
+        </div>
+      `;
+      list.appendChild(item);
+    }
+
+    cleanPending.forEach(room => {
       const s   = state[room.id].status;
       const ago = timeSince(state[room.id].alertedAt);
       const item = document.createElement('div');
@@ -542,63 +770,82 @@
       item.innerHTML = `
         <div class="q-left">
           <span class="q-name">${room.name}</span>
-          <span class="q-meta">${room.type === 'sauna' ? 'Sauna' : 'Red light therapy'} &middot; alerted ${ago}</span>
+          <span class="q-meta">${room.type === 'sauna' ? 'Sauna' : 'Red light'} · flagged ${ago}</span>
         </div>
         <div class="q-actions">
           ${s === 'needs-clean' ? `<button class="q-btn start" onclick="startCleaning('${room.id}')">Start</button>` : ''}
-          ${s === 'in-progress' ? `<button class="q-btn done" onclick="markDone('${room.id}')">Done</button>` : ''}
+          ${s === 'in-progress' ? `<button class="q-btn done"  onclick="markDone('${room.id}')">Done</button>`  : ''}
         </div>
       `;
       list.appendChild(item);
     });
-    updateBackTab(pending.length);
+
+    updateBackTab(total);
   }
 
-  function toggleAlert(id) {
-    const s    = state[id].status;
-    const room = rooms.find(r => r.id === id);
-    if (s === 'clear') {
-      state[id] = { status: 'needs-clean', alertedAt: Date.now() };
-      playAlert();
-      showToast(`${room.name} added to cleaning queue`);
-    } else if (s === 'needs-clean') {
-      state[id] = { status: 'clear', alertedAt: null };
-      showToast(`${room.name} cleared`);
-    }
-    writeState();
+  function startSession(id) {
+    state[id] = { status: 'in-use', alertedAt: null, sessionStart: Date.now() };
+    showToast(`${rooms.find(r => r.id === id).name} session started`);
+    writeRooms(); startTick();
   }
 
-  function alertAll() {
-    let count = 0;
-    rooms.forEach(r => {
-      if (state[r.id].status === 'clear') {
-        state[r.id] = { status: 'needs-clean', alertedAt: Date.now() };
-        count++;
-      }
-    });
-    if (count) { playAlert(); showToast(`${count} rooms added to queue`); }
-    writeState();
+  function endSession(id) {
+    state[id] = { status: 'clear', alertedAt: null, sessionStart: null };
+    showToast(`${rooms.find(r => r.id === id).name} session ended`);
+    writeRooms();
+  }
+
+  function flagClean(id) {
+    state[id] = { status: 'needs-clean', alertedAt: Date.now(), sessionStart: null };
+    playAlert();
+    showToast(`${rooms.find(r => r.id === id).name} flagged for cleaning`);
+    writeRooms();
+  }
+
+  function clearRoom(id) {
+    state[id] = { status: 'clear', alertedAt: null, sessionStart: null };
+    showToast(`${rooms.find(r => r.id === id).name} cleared`);
+    writeRooms();
   }
 
   function startCleaning(id) {
     state[id].status = 'in-progress';
     showToast(`Cleaning ${rooms.find(r => r.id === id).name}...`);
-    writeState();
+    writeRooms();
   }
 
   function markDone(id) {
-    state[id] = { status: 'clear', alertedAt: null };
+    state[id] = { status: 'clear', alertedAt: null, sessionStart: null };
     playDone();
     showToast(`${rooms.find(r => r.id === id).name} is clean`);
-    writeState();
+    writeRooms();
   }
 
-  function updateAlertAllBtn() {
-    const btn     = document.getElementById('alert-all-btn');
-    const pending = rooms.filter(r => state[r.id].status === 'needs-clean').length;
-    const allDone = rooms.every(r => state[r.id].status === 'clear');
-    btn.disabled    = allDone;
-    btn.textContent = pending > 0 ? `${pending} room${pending>1?'s':''} pending — alert all` : 'Alert: all pending rooms';
+  function alertMintTowels() {
+    mintState = { active: true, alertedAt: Date.now() };
+    playAlert();
+    showToast('Mint towel alert sent');
+    writeMint();
+  }
+
+  function clearMint() {
+    mintState = { active: false, alertedAt: null };
+    playDone();
+    showToast('Mint towels done');
+    writeMint();
+  }
+
+  let modalShownFor = {};
+
+  function showSessionEndedModal(roomName) {
+    if (modalShownFor[roomName]) return;
+    modalShownFor[roomName] = true;
+    document.getElementById('modal-room-name').textContent = `${roomName} — session ended`;
+    document.getElementById('session-modal').classList.add('show');
+  }
+
+  function closeModal() {
+    document.getElementById('session-modal').classList.remove('show');
   }
 
   function updateBackTab(count) {
@@ -623,6 +870,10 @@
     toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
   }
 
+  function isBackView() {
+    return document.getElementById('view-back').classList.contains('active');
+  }
+
   function switchView(v, e) {
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.view-toggle button').forEach(el => el.classList.remove('active'));
@@ -632,7 +883,7 @@
   }
 
   setInterval(() => {
-    if (document.getElementById('view-back').classList.contains('active')) buildQueue();
+    if (isBackView()) buildQueue();
   }, 60000);
 </script>
 </body>
