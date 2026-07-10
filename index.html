@@ -42,10 +42,19 @@
   .section-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; margin-top: 28px; }
   .section-label:first-child { margin-top: 0; }
   .room-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .room-card { position: relative; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; transition: all 0.18s; overflow: hidden; }
+  .room-card { position: relative; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; transition: border-color 0.18s, background 0.18s; overflow: hidden; }
   .room-card.in-use { border-color: var(--amber); background: #1E1608; }
   .room-card.needs-clean { border-color: var(--primary-dim); background: #1E0E0E; }
   .room-card.in-progress { border-color: var(--sage); background: #101A12; }
+  .room-card.urgent { animation: urgentPulse 1.5s infinite; }
+  @keyframes urgentPulse {
+    0%, 100% { border-color: var(--primary); box-shadow: 0 0 0 0 rgba(217,64,64,0.4); }
+    50%       { border-color: var(--primary-hl); box-shadow: 0 0 0 6px rgba(217,64,64,0); }
+  }
+  .room-card.urgent .countdown-text { color: var(--primary-hl) !important; }
+  .room-card.urgent .countdown-label { color: var(--primary-hl) !important; }
+  .urgent-badge { display: none; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary-hl); text-align: center; margin-top: 4px; }
+  .room-card.urgent .urgent-badge { display: block; }
   .room-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .room-name-wrap { display: flex; align-items: center; gap: 7px; }
   .room-type-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
@@ -60,7 +69,8 @@
   .countdown-ring { position: relative; width: 64px; height: 64px; margin: 0 auto 6px; }
   .countdown-ring svg { transform: rotate(-90deg); width: 64px; height: 64px; }
   .countdown-ring circle { fill: none; stroke-width: 4; }
-  .ring-bg { stroke: var(--border); } .ring-fill { stroke: var(--amber); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+  .ring-bg { stroke: var(--border); }
+  .ring-fill { stroke: var(--amber); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
   .countdown-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.85rem; font-weight: 600; color: var(--amber-hl); font-variant-numeric: tabular-nums; }
   .countdown-label { font-size: 0.68rem; color: var(--muted); }
   .room-actions { display: flex; gap: 6px; margin-top: 10px; }
@@ -185,12 +195,12 @@
   const mintRef  = db.ref('mint');
 
   const rooms = [
-    { id: 'R1', name: 'Room 1',             type: 'red',   duration: 15 * 60 },
-    { id: 'S2', name: 'Room 2',             type: 'sauna', duration: 60 * 60 },
-    { id: 'S3', name: 'Room 3: Social Sauna', type: 'sauna', duration: 40 * 60 },
-    { id: 'S4', name: 'Room 4',             type: 'sauna', duration: 40 * 60 },
-    { id: 'R5', name: 'Room 5',             type: 'red',   duration: 15 * 60 },
-    { id: 'S6', name: 'Room 6',             type: 'sauna', duration: 40 * 60 },
+    { id: 'R1', name: 'Room 1',               type: 'red',   duration: 20 * 60 },
+    { id: 'S2', name: 'Room 2',               type: 'sauna', duration: 60 * 60 },
+    { id: 'S3', name: 'Room 3: Social Sauna', type: 'sauna', duration: 45 * 60 },
+    { id: 'S4', name: 'Room 4',               type: 'sauna', duration: 45 * 60 },
+    { id: 'R5', name: 'Room 5',               type: 'red',   duration: 20 * 60 },
+    { id: 'S6', name: 'Room 6',               type: 'sauna', duration: 45 * 60 },
   ];
 
   const state = {}, prevStat = {};
@@ -260,7 +270,17 @@
           const elapsed = Math.floor((Date.now() - state[r.id].sessionStart) / 1000);
           const remaining = Math.max(0, room.duration - elapsed);
           updateCountdown(r.id, remaining, room.duration);
+
           if (remaining === 0 && !isBackView()) showSessionEndedModal(room.name);
+
+          const cardEl = document.querySelector(`.room-card[data-id="${r.id}"]`);
+          if (cardEl) {
+            if (remaining <= 300 && remaining > 0) {
+              cardEl.classList.add('urgent');
+            } else {
+              cardEl.classList.remove('urgent');
+            }
+          }
         }
       });
       if (!anyInUse) { clearInterval(tickTimer); tickTimer = null; }
@@ -279,7 +299,7 @@
       const circ = 2 * Math.PI * 28;
       ring.style.strokeDasharray = circ;
       ring.style.strokeDashoffset = circ * (1 - remaining / total);
-      ring.style.stroke = remaining === 0 ? 'var(--primary)' : 'var(--amber)';
+      ring.style.stroke = remaining <= 300 ? 'var(--primary)' : 'var(--amber)';
     }
   }
 
@@ -327,18 +347,21 @@
     rooms.forEach(room => {
       const s = state[room.id].status;
       const card = document.createElement('div');
-      card.className = `room-card ${room.type} ${s === 'in-use' ? 'in-use' : ''} ${s === 'needs-clean' ? 'needs-clean' : ''} ${s === 'in-progress' ? 'in-progress' : ''}`.trim();
+      const elapsed = state[room.id].sessionStart ? Math.floor((Date.now() - state[room.id].sessionStart) / 1000) : 0;
+      const remaining = Math.max(0, room.duration - elapsed);
+      const isUrgent = s === 'in-use' && remaining <= 300 && remaining > 0;
+
+      card.className = `room-card ${room.type} ${s === 'in-use' ? 'in-use' : ''} ${s === 'needs-clean' ? 'needs-clean' : ''} ${s === 'in-progress' ? 'in-progress' : ''} ${isUrgent ? 'urgent' : ''}`.trim();
       card.dataset.id = room.id;
 
       const chipLabel = s === 'in-use' ? 'In use' : s === 'needs-clean' ? 'Needs clean' : s === 'in-progress' ? 'Cleaning' : '';
       const chipClass = s === 'in-use' ? 'chip-use' : s === 'needs-clean' ? 'chip-clean' : s === 'in-progress' ? 'chip-prog' : '';
 
       const circ = 2 * Math.PI * 28;
-      const elapsed = state[room.id].sessionStart ? Math.floor((Date.now() - state[room.id].sessionStart) / 1000) : 0;
-      const remaining = Math.max(0, room.duration - elapsed);
       const pct = remaining / room.duration;
       const mins = Math.floor(remaining / 60), secs = remaining % 60;
-      const subLabel = room.type === 'red' ? 'Red light · 15 min' : room.id === 'S2' ? 'Sauna · 60 min' : 'Sauna · 40 min';
+      const subLabel = room.type === 'red' ? 'Red light · 20 min' : room.id === 'S2' ? 'Sauna · 60 min' : 'Sauna · 45 min';
+      const ringColor = remaining <= 300 ? 'var(--primary)' : 'var(--amber)';
 
       card.innerHTML = `
         <div class="room-card-top">
@@ -356,11 +379,12 @@
             <svg viewBox="0 0 64 64">
               <circle class="ring-bg" cx="32" cy="32" r="28"/>
               <circle class="ring-fill" cx="32" cy="32" r="28"
-                style="stroke-dasharray:${circ};stroke-dashoffset:${circ*(1-pct)};stroke:${remaining===0?'var(--primary)':'var(--amber)'}"/>
+                style="stroke-dasharray:${circ};stroke-dashoffset:${circ*(1-pct)};stroke:${ringColor}"/>
             </svg>
             <div class="countdown-text">${mins}:${String(secs).padStart(2,'0')}</div>
           </div>
           <div class="countdown-label">${remaining === 0 ? 'Session ended' : 'remaining'}</div>
+          <div class="urgent-badge">⚠ 5 min warning</div>
         </div>
         <div class="room-actions">
           ${s === 'clear' ? `
