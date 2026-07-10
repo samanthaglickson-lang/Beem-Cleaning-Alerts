@@ -55,6 +55,7 @@
   .room-card.urgent .countdown-label { color: var(--primary-hl) !important; }
   .urgent-badge { display: none; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary-hl); text-align: center; margin-top: 4px; }
   .room-card.urgent .urgent-badge { display: block; }
+  .done-at-label { font-size: 0.68rem; color: var(--muted); text-align: center; margin-top: 3px; }
   .room-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .room-name-wrap { display: flex; align-items: center; gap: 7px; }
   .room-type-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
@@ -259,6 +260,15 @@
     document.getElementById('conn-label').textContent = yes ? 'Live - syncing between devices' : 'Not connected';
   }
 
+  function getEndTime(sessionStart, duration) {
+    const end  = new Date(sessionStart + duration * 1000);
+    const h    = end.getHours();
+    const m    = end.getMinutes();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12  = h % 12 || 12;
+    return 'Done at ' + h12 + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+  }
+
   function startTick() {
     if (tickTimer) return;
     tickTimer = setInterval(() => {
@@ -270,16 +280,11 @@
           const elapsed = Math.floor((Date.now() - state[r.id].sessionStart) / 1000);
           const remaining = Math.max(0, room.duration - elapsed);
           updateCountdown(r.id, remaining, room.duration);
-
           if (remaining === 0 && !isBackView()) showSessionEndedModal(room.name);
-
           const cardEl = document.querySelector(`.room-card[data-id="${r.id}"]`);
           if (cardEl) {
-            if (remaining <= 300 && remaining > 0) {
-              cardEl.classList.add('urgent');
-            } else {
-              cardEl.classList.remove('urgent');
-            }
+            if (remaining <= 300 && remaining > 0) cardEl.classList.add('urgent');
+            else cardEl.classList.remove('urgent');
           }
         }
       });
@@ -290,14 +295,14 @@
   function updateCountdown(id, remaining, total) {
     const card = document.querySelector(`.room-card[data-id="${id}"]`); if (!card) return;
     const mins = Math.floor(remaining / 60), secs = remaining % 60;
-    const txt = card.querySelector('.countdown-text');
+    const txt  = card.querySelector('.countdown-text');
     const ring = card.querySelector('.ring-fill');
-    const lbl = card.querySelector('.countdown-label');
+    const lbl  = card.querySelector('.countdown-label');
     if (txt) txt.textContent = `${mins}:${String(secs).padStart(2,'0')}`;
     if (lbl) lbl.textContent = remaining === 0 ? 'Session ended' : 'remaining';
     if (ring) {
       const circ = 2 * Math.PI * 28;
-      ring.style.strokeDasharray = circ;
+      ring.style.strokeDasharray  = circ;
       ring.style.strokeDashoffset = circ * (1 - remaining / total);
       ring.style.stroke = remaining <= 300 ? 'var(--primary)' : 'var(--amber)';
     }
@@ -346,22 +351,23 @@
 
     rooms.forEach(room => {
       const s = state[room.id].status;
-      const card = document.createElement('div');
-      const elapsed = state[room.id].sessionStart ? Math.floor((Date.now() - state[room.id].sessionStart) / 1000) : 0;
+      const elapsed   = state[room.id].sessionStart ? Math.floor((Date.now() - state[room.id].sessionStart) / 1000) : 0;
       const remaining = Math.max(0, room.duration - elapsed);
-      const isUrgent = s === 'in-use' && remaining <= 300 && remaining > 0;
+      const isUrgent  = s === 'in-use' && remaining <= 300 && remaining > 0;
 
+      const card = document.createElement('div');
       card.className = `room-card ${room.type} ${s === 'in-use' ? 'in-use' : ''} ${s === 'needs-clean' ? 'needs-clean' : ''} ${s === 'in-progress' ? 'in-progress' : ''} ${isUrgent ? 'urgent' : ''}`.trim();
       card.dataset.id = room.id;
 
       const chipLabel = s === 'in-use' ? 'In use' : s === 'needs-clean' ? 'Needs clean' : s === 'in-progress' ? 'Cleaning' : '';
       const chipClass = s === 'in-use' ? 'chip-use' : s === 'needs-clean' ? 'chip-clean' : s === 'in-progress' ? 'chip-prog' : '';
 
-      const circ = 2 * Math.PI * 28;
-      const pct = remaining / room.duration;
-      const mins = Math.floor(remaining / 60), secs = remaining % 60;
-      const subLabel = room.type === 'red' ? 'Red light · 20 min' : room.id === 'S2' ? 'Sauna · 60 min' : 'Sauna · 45 min';
+      const circ      = 2 * Math.PI * 28;
+      const pct       = remaining / room.duration;
+      const mins      = Math.floor(remaining / 60), secs = remaining % 60;
+      const subLabel  = room.type === 'red' ? 'Red light · 20 min' : room.id === 'S2' ? 'Sauna · 60 min' : 'Sauna · 45 min';
       const ringColor = remaining <= 300 ? 'var(--primary)' : 'var(--amber)';
+      const doneAt    = state[room.id].sessionStart ? getEndTime(state[room.id].sessionStart, room.duration) : '';
 
       card.innerHTML = `
         <div class="room-card-top">
@@ -384,6 +390,7 @@
             <div class="countdown-text">${mins}:${String(secs).padStart(2,'0')}</div>
           </div>
           <div class="countdown-label">${remaining === 0 ? 'Session ended' : 'remaining'}</div>
+          <div class="done-at-label">${doneAt}</div>
           <div class="urgent-badge">⚠ 5 min warning</div>
         </div>
         <div class="room-actions">
